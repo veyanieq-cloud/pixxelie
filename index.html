@@ -48,45 +48,51 @@
         </div>
     </div>
 
-  <!-- Панель администратора -->
-<div id="adminPanel" class="modal hidden">
-    <div class="modal-content admin-content">
-        <h3>Панель администратора</h3>
-        
-        <div class="admin-section">
-            <h4>Управление игроками</h4>
-            <button id="resetPlayers" class="reset-button">Сбросить список игроков</button>
-            <p class="admin-hint">Удалит всех игроков и обнулит счета</p>
-        </div>
-        
-        <div class="admin-section">
-            <h4>Управление вопросами</h4>
-            <div class="form-group">
-                <label>Пиксель (x,y):</label>
-                <input type="number" id="adminX" min="0" max="9" placeholder="X">
-                <input type="number" id="adminY" min="0" max="9" placeholder="Y">
+    <!-- Панель администратора -->
+    <div id="adminPanel" class="modal hidden">
+        <div class="modal-content admin-content">
+            <h3>Панель администратора</h3>
+            
+            <div class="admin-section">
+                <h4>Управление игроками</h4>
+                <button id="resetPlayers" class="reset-button">Сбросить список игроков</button>
+                <p class="admin-hint">Удалит всех игроков и обнулит счета</p>
             </div>
-            <div class="form-group">
-                <label>Вопрос:</label>
-                <textarea id="adminQuestion" placeholder="Введите вопрос"></textarea>
+            
+            <div class="admin-section">
+                <h4>Управление вопросами</h4>
+                <div class="form-group">
+                    <label>Пиксель (x,y):</label>
+                    <input type="number" id="adminX" min="0" max="9" placeholder="X">
+                    <input type="number" id="adminY" min="0" max="9" placeholder="Y">
+                </div>
+                <div class="form-group">
+                    <label>Вопрос:</label>
+                    <textarea id="adminQuestion" placeholder="Введите вопрос"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Правильный ответ:</label>
+                    <input type="text" id="adminAnswer" placeholder="Правильный ответ">
+                </div>
+                <div class="form-group">
+                    <label>Цвет пикселя:</label>
+                    <input type="color" id="adminColor" value="#ff0000">
+                </div>
+                <button id="saveQuestion">Сохранить вопрос</button>
+                <button id="deleteQuestion">Удалить вопрос</button>
             </div>
-            <div class="form-group">
-                <label>Правильный ответ:</label>
-                <input type="text" id="adminAnswer" placeholder="Правильный ответ">
-            </div>
-            <div class="form-group">
-                <label>Цвет пикселя:</label>
-                <input type="color" id="adminColor" value="#ff0000">
-            </div>
-            <button id="saveQuestion">Сохранить вопрос</button>
-            <button id="deleteQuestion">Удалить вопрос</button>
-        </div>
 
-        <div class="admin-section">
-            <h4>Список вопросов</h4>
-            <div id="questionsList" class="questions-list"></div>
-        </div>
+            <div class="admin-section">
+                <h4>Список вопросов</h4>
+                <div id="questionsList" class="questions-list"></div>
+            </div>
 
-        <button id="closeAdmin">Закрыть панель</button>
+            <button id="closeAdmin">Закрыть панель</button>
+        </div>
     </div>
-</div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.10/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.10/firebase-database-compat.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
