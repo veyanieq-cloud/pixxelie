@@ -1,14 +1,13 @@
 // Конфигурация Firebase - нужно заменить на вашу!
 const firebaseConfig = {
-  apiKey: "AIzaSyCxX5J41qh1s1DvErx66P87Fy8wUTPO6F8",
-  authDomain: "pixxelie.firebaseapp.com",
-  databaseURL: "https://pixxelie-default-rtdb.firebaseio.com",
-  projectId: "pixxelie",
-  storageBucket: "pixxelie.firebasestorage.app",
-  messagingSenderId: "518065921765",
-  appId: "1:518065921765:web:e920ab874e0f762b3d7e0c"
+    apiKey: "your-api-key",
+    authDomain: "your-project.firebaseapp.com",
+    databaseURL: "https://your-project-default-rtdb.firebaseio.com",
+    projectId: "your-project",
+    storageBucket: "your-project.appspot.com",
+    messagingSenderId: "your-sender-id",
+    appId: "your-app-id"
 };
-
 
 // Инициализация Firebase
 try {
@@ -61,8 +60,8 @@ function initGame() {
 // Создание игрового поля
 function createPixelGrid() {
     pixelGrid.innerHTML = '';
-    for (let y = 0; y < 10; y++) {
-        for (let x = 0; x < 10; x++) {
+    for (let y = 0; y < 7; y++) {
+        for (let x = 0; x < 7; x++) {
             const pixel = document.createElement('div');
             pixel.className = 'pixel';
             pixel.dataset.x = x;
@@ -325,8 +324,8 @@ function saveQuestion() {
     const answer = document.getElementById('adminAnswer').value;
     const color = document.getElementById('adminColor').value;
 
-    if (isNaN(x) || isNaN(y) || x < 0 || x > 9 || y < 0 || y > 9) {
-        showNotification("Введите корректные координаты (0-9)", "error");
+    if (isNaN(x) || isNaN(y) || x < 0 || x > 6 || y < 0 || y > 6) {
+        showNotification("Введите корректные координаты (0-6)", "error");
         return;
     }
 
@@ -460,8 +459,8 @@ function setupRealtimeListeners() {
 
 // Обновление игрового поля
 function updatePixelGrid(pixels) {
-    for (let y = 0; y < 10; y++) {
-        for (let x = 0; x < 10; x++) {
+    for (let y = 0; y < 7; y++) {
+        for (let x = 0; x < 7; x++) {
             const pixelKey = `${x}-${y}`;
             const pixelElement = document.querySelector(`.pixel[data-x="${x}"][data-y="${y}"]`);
             
