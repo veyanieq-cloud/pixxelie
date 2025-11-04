@@ -253,11 +253,68 @@ function showNotification(message, type = "success") {
 function setupAdminPanel() {
     const saveQuestionBtn = document.getElementById('saveQuestion');
     const deleteQuestionBtn = document.getElementById('deleteQuestion');
+    const resetPlayersBtn = document.getElementById('resetPlayers');
     
     saveQuestionBtn.addEventListener('click', saveQuestion);
     deleteQuestionBtn.addEventListener('click', deleteQuestion);
+    resetPlayersBtn.addEventListener('click', resetPlayersList);
     
     loadQuestionsList();
+}
+
+// Сброс списка игроков
+function resetPlayersList() {
+    if (!confirm("Вы уверены, что хотите сбросить список игроков? Все игроки будут удалены, а их счета обнулятся.")) {
+        return;
+    }
+    
+    database.ref('users').once('value').then(snapshot => {
+        const updates = {};
+        
+        snapshot.forEach(childSnapshot => {
+            const user = childSnapshot.val();
+            if (!user.isAdmin) {
+                // Удаляем обычных игроков
+                updates[childSnapshot.key] = null;
+            } else {
+                // Админам сбрасываем счет, но не удаляем
+                updates[childSnapshot.key] = {
+                    ...user,
+                    score: 0
+                };
+            }
+        });
+        
+        return database.ref('users').update(updates);
+    }).then(() => {
+        showNotification("Список игроков сброшен!", "success");
+        
+        // Также сбрасываем все ответы на пикселях
+        return database.ref('pixels').once('value');
+    }).then(snapshot => {
+        const updates = {};
+        
+        snapshot.forEach(childSnapshot => {
+            const pixelData = childSnapshot.val();
+            if (pixelData.answered) {
+                updates[childSnapshot.key] = {
+                    ...pixelData,
+                    answered: false,
+                    answeredBy: null,
+                    answeredAt: null
+                };
+            }
+        });
+        
+        if (Object.keys(updates).length > 0) {
+            return database.ref('pixels').update(updates);
+        }
+    }).then(() => {
+        showNotification("Все пиксели разблокированы!", "success");
+    }).catch(error => {
+        console.error("Error resetting players:", error);
+        showNotification("Ошибка при сбросе игроков", "error");
+    });
 }
 
 // Сохранение вопроса
@@ -494,3 +551,4 @@ window.addEventListener('beforeunload', () => {
         database.ref('users/' + currentUser.id).remove();
     }
 });
+        
