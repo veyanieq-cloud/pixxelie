@@ -50,8 +50,10 @@ function initGame() {
     database.ref('.info/connected').on('value', (snapshot) => {
         if (snapshot.val() === true) {
             console.log("Connected to Firebase");
+            showNotification("Подключено к игре", "success");
         } else {
             console.log("Disconnected from Firebase");
+            showNotification("Потеряно соединение", "error");
         }
     });
 }
@@ -65,7 +67,14 @@ function createPixelGrid() {
             pixel.className = 'pixel';
             pixel.dataset.x = x;
             pixel.dataset.y = y;
+            
+            // Добавляем обработчики для десктопа и мобильных
             pixel.addEventListener('click', () => handlePixelClick(x, y));
+            pixel.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                handlePixelClick(x, y);
+            });
+            
             pixelGrid.appendChild(pixel);
         }
     }
@@ -84,6 +93,17 @@ function setupEventListeners() {
         selectedPixel = null;
     });
     closeAdmin.addEventListener('click', () => adminPanel.classList.add('hidden'));
+    
+    // Закрытие модальных окон по клику вне области
+    document.addEventListener('click', (e) => {
+        if (e.target === questionModal) {
+            questionModal.classList.add('hidden');
+            selectedPixel = null;
+        }
+        if (e.target === adminPanel) {
+            adminPanel.classList.add('hidden');
+        }
+    });
 }
 
 // Подключение к игре
@@ -92,7 +112,7 @@ function joinGame() {
     console.log("Join game attempt with username:", username);
     
     if (!username) {
-        alert('Введите ник!');
+        showNotification("Введите ник!", "error");
         return;
     }
 
@@ -115,7 +135,8 @@ function joinGame() {
         setTimeout(() => {
             adminPanel.classList.remove('hidden');
             setupAdminPanel();
-        }, 1000);
+            showNotification("Панель администратора активирована", "success");
+        }, 500);
     }
 
     // Добавляем пользователя в базу данных
@@ -127,9 +148,10 @@ function joinGame() {
     }).then(() => {
         console.log("User saved to database");
         setupRealtimeListeners();
+        showNotification("Добро пожаловать в игру!", "success");
     }).catch(error => {
         console.error("Error saving user:", error);
-        alert('Ошибка подключения к базе данных. Проверьте конфигурацию Firebase.');
+        showNotification("Ошибка подключения к базе данных", "error");
     });
 }
 
@@ -144,21 +166,22 @@ function handlePixelClick(x, y) {
         database.ref('pixels/' + pixelKey).once('value').then(snapshot => {
             const pixelData = snapshot.val();
             if (pixelData && pixelData.answered) {
-                alert('Этот пиксель уже занят!');
+                showNotification("Этот пиксель уже занят!", "error");
             } else if (pixelData && pixelData.question) {
                 selectedPixel = { x, y };
-                showQuestion(pixelData.question, pixelData.answer);
+                showQuestion(pixelData.question);
             } else {
-                alert('Для этого пикселя нет вопроса!');
+                showNotification("Для этого пикселя нет вопроса!", "error");
             }
         }).catch(error => {
             console.error("Error reading pixel data:", error);
+            showNotification("Ошибка загрузки вопроса", "error");
         });
     }
 }
 
 // Показать вопрос
-function showQuestion(question, correctAnswer) {
+function showQuestion(question) {
     questionText.textContent = question;
     answerInput.value = '';
     questionModal.classList.remove('hidden');
@@ -169,7 +192,7 @@ function showQuestion(question, correctAnswer) {
 function submitAnswerHandler() {
     const userAnswer = answerInput.value.trim().toLowerCase();
     if (!userAnswer) {
-        alert('Введите ответ!');
+        showNotification("Введите ответ!", "error");
         return;
     }
 
@@ -192,18 +215,38 @@ function submitAnswerHandler() {
                 score: newScore
             });
 
-            alert('Правильный ответ!');
+            showNotification("Правильный ответ! +1 балл", "success");
             questionModal.classList.add('hidden');
             selectedPixel = null;
         } else {
-            alert('Неправильный ответ! Попробуйте еще раз.');
+            showNotification("Неправильный ответ! Попробуйте еще раз.", "error");
             answerInput.value = '';
             answerInput.focus();
         }
     }).catch(error => {
         console.error("Error checking answer:", error);
-        alert('Ошибка при проверке ответа');
+        showNotification("Ошибка при проверке ответа", "error");
     });
+}
+
+// Показать уведомление (вместо alert)
+function showNotification(message, type = "success") {
+    // Удаляем предыдущие уведомления
+    const existingNotifications = document.querySelectorAll('.notification');
+    existingNotifications.forEach(notif => notif.remove());
+
+    const notification = document.createElement('div');
+    notification.className = `notification ${type === 'error' ? 'error' : ''}`;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    // Автоматическое скрытие через 3 секунды
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 3000);
 }
 
 // Настройка панели администратора
@@ -226,12 +269,12 @@ function saveQuestion() {
     const color = document.getElementById('adminColor').value;
 
     if (isNaN(x) || isNaN(y) || x < 0 || x > 9 || y < 0 || y > 9) {
-        alert('Введите корректные координаты (0-9)');
+        showNotification("Введите корректные координаты (0-9)", "error");
         return;
     }
 
     if (!question || !answer) {
-        alert('Заполните вопрос и ответ');
+        showNotification("Заполните вопрос и ответ", "error");
         return;
     }
 
@@ -244,12 +287,12 @@ function saveQuestion() {
         createdBy: currentUser.username,
         createdAt: Date.now()
     }).then(() => {
-        alert('Вопрос сохранен!');
+        showNotification("Вопрос сохранен!", "success");
         clearAdminForm();
         loadQuestionsList();
     }).catch(error => {
         console.error("Error saving question:", error);
-        alert('Ошибка сохранения вопроса');
+        showNotification("Ошибка сохранения вопроса", "error");
     });
 }
 
@@ -259,18 +302,18 @@ function deleteQuestion() {
     const y = parseInt(document.getElementById('adminY').value);
 
     if (isNaN(x) || isNaN(y)) {
-        alert('Введите координаты пикселя');
+        showNotification("Введите координаты пикселя", "error");
         return;
     }
 
     const pixelKey = `${x}-${y}`;
     database.ref('pixels/' + pixelKey).remove().then(() => {
-        alert('Вопрос удален!');
+        showNotification("Вопрос удален!", "success");
         clearAdminForm();
         loadQuestionsList();
     }).catch(error => {
         console.error("Error deleting question:", error);
-        alert('Ошибка удаления вопроса');
+        showNotification("Ошибка удаления вопроса", "error");
     });
 }
 
@@ -372,12 +415,12 @@ function updatePixelGrid(pixels) {
                     pixelElement.classList.add('answered');
                     pixelElement.title = `Отвечен: ${pixelData.answeredBy}`;
                 } else {
-                    pixelElement.style.backgroundColor = '#fff';
+                    pixelElement.style.backgroundColor = '#ecf0f1';
                     pixelElement.classList.remove('answered');
                     pixelElement.title = pixelData.question || 'Нет вопроса';
                 }
             } else {
-                pixelElement.style.backgroundColor = '#fff';
+                pixelElement.style.backgroundColor = '#ecf0f1';
                 pixelElement.classList.remove('answered');
                 pixelElement.title = 'Нет вопроса';
             }
@@ -388,8 +431,8 @@ function updatePixelGrid(pixels) {
 // Обновление списка игроков
 function updatePlayersList(users) {
     if (!users) {
-        playersList.innerHTML = '<div>Нет игроков онлайн</div>';
-        scoreList.innerHTML = '<div>Нет данных</div>';
+        playersList.innerHTML = '<div class="player-item">Нет игроков онлайн</div>';
+        scoreList.innerHTML = '<div class="score-item">Нет данных</div>';
         return;
     }
 
@@ -410,23 +453,31 @@ function updatePlayersList(users) {
     scoreArray.sort((a, b) => b.score - a.score);
 
     // Обновляем онлайн игроков
-    playersArray.forEach(user => {
-        const playerElement = document.createElement('div');
-        playerElement.className = 'player-item';
-        playerElement.textContent = `${user.username} (${user.score})`;
-        playersList.appendChild(playerElement);
-    });
+    if (playersArray.length === 0) {
+        playersList.innerHTML = '<div class="player-item">Нет игроков онлайн</div>';
+    } else {
+        playersArray.forEach(user => {
+            const playerElement = document.createElement('div');
+            playerElement.className = 'player-item';
+            playerElement.textContent = `${user.username} (${user.score})`;
+            playersList.appendChild(playerElement);
+        });
+    }
 
     // Обновляем таблицу лидеров
-    scoreArray.forEach((user, index) => {
-        const scoreElement = document.createElement('div');
-        scoreElement.className = 'score-item';
-        scoreElement.innerHTML = `
-            <span>${index + 1}. ${user.username}</span>
-            <span>${user.score} баллов</span>
-        `;
-        scoreList.appendChild(scoreElement);
-    });
+    if (scoreArray.length === 0) {
+        scoreList.innerHTML = '<div class="score-item">Нет игроков</div>';
+    } else {
+        scoreArray.forEach((user, index) => {
+            const scoreElement = document.createElement('div');
+            scoreElement.className = 'score-item';
+            scoreElement.innerHTML = `
+                <span>${index + 1}. ${user.username}</span>
+                <span>${user.score} баллов</span>
+            `;
+            scoreList.appendChild(scoreElement);
+        });
+    }
 }
 
 // Вспомогательные функции
@@ -443,4 +494,3 @@ window.addEventListener('beforeunload', () => {
         database.ref('users/' + currentUser.id).remove();
     }
 });
-       
