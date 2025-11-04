@@ -106,8 +106,8 @@ body {
 
 .pixel-grid {
     display: grid;
-    grid-template-columns: repeat(10, 1fr);
-    grid-template-rows: repeat(10, 1fr);
+    grid-template-columns: repeat(7, 1fr);
+    grid-template-rows: repeat(7, 1fr);
     gap: 2px;
     background: #34495e;
     padding: 10px;
@@ -126,7 +126,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 8px;
+    font-size: 10px;
     text-align: center;
     border-radius: 3px;
 }
