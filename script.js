@@ -1,4 +1,3 @@
-// Конфигурация Firebase - нужно заменить на вашу!
 const firebaseConfig = {
   apiKey: "AIzaSyCxX5J41qh1s1DvErx66P87Fy8wUTPO6F8",
   authDomain: "pixxelie.firebaseapp.com",
@@ -8,20 +7,30 @@ const firebaseConfig = {
   messagingSenderId: "518065921765",
   appId: "1:518065921765:web:e920ab874e0f762b3d7e0c"
 };
+// Проверяем наличие Firebase
+if (typeof firebase === 'undefined') {
+    console.error('Firebase не загружен! Проверьте подключение к интернету');
+    alert('Ошибка: Firebase не загружен. Проверьте подключение к интернету.');
+} else {
+    console.log('Firebase доступен');
+}
 
 // Инициализация Firebase
+let database;
 try {
-    firebase.initializeApp(firebaseConfig);
+    const app = firebase.initializeApp(firebaseConfig);
+    database = firebase.database();
     console.log("Firebase initialized successfully");
 } catch (error) {
     console.error("Firebase initialization error:", error);
+    alert('Ошибка инициализации Firebase. Проверьте конфигурацию.');
 }
-const database = firebase.database();
 
 // Глобальные переменные
 let currentUser = null;
 let isAdmin = false;
 let selectedPixel = null;
+let isConnected = false;
 
 // Элементы DOM
 const loginScreen = document.getElementById('loginScreen');
@@ -42,19 +51,29 @@ const closeAdmin = document.getElementById('closeAdmin');
 // Инициализация игры
 function initGame() {
     console.log("Game initializing...");
+    
+    // Проверяем, инициализирована ли база данных
+    if (!database) {
+        showNotification("Ошибка подключения к базе данных", "error");
+        return;
+    }
+    
     createPixelGrid();
     setupEventListeners();
     
     // Проверяем подключение к Firebase
-    database.ref('.info/connected').on('value', (snapshot) => {
-        if (snapshot.val() === true) {
-            console.log("Connected to Firebase");
-            showNotification("Подключено к игре", "success");
-        } else {
-            console.log("Disconnected from Firebase");
-            showNotification("Потеряно соединение", "error");
-        }
-    });
+    if (database) {
+        database.ref('.info/connected').on('value', (snapshot) => {
+            isConnected = snapshot.val() === true;
+            if (isConnected) {
+                console.log("Connected to Firebase");
+                showNotification("Подключено к игре", "success");
+            } else {
+                console.log("Disconnected from Firebase");
+                showNotification("Потеряно соединение", "error");
+            }
+        });
+    }
 }
 
 // Создание игрового поля
@@ -115,6 +134,12 @@ function joinGame() {
         return;
     }
 
+    // Проверяем подключение к базе данных
+    if (!database || !isConnected) {
+        showNotification("Нет подключения к базе данных. Проверьте конфигурацию Firebase.", "error");
+        return;
+    }
+
     currentUser = {
         id: generateId(),
         username: username,
@@ -146,17 +171,22 @@ function joinGame() {
         lastActive: Date.now()
     }).then(() => {
         console.log("User saved to database");
-        setupRealtimeListeners();
         showNotification("Добро пожаловать в игру!", "success");
+        setupRealtimeListeners();
     }).catch(error => {
         console.error("Error saving user:", error);
-        showNotification("Ошибка подключения к базе данных", "error");
+        showNotification("Ошибка сохранения пользователя: " + error.message, "error");
     });
 }
 
 // Обработка клика по пикселю
 function handlePixelClick(x, y) {
     console.log("Pixel clicked:", x, y, "Admin:", isAdmin);
+    
+    if (!database || !isConnected) {
+        showNotification("Нет подключения к базе данных", "error");
+        return;
+    }
     
     if (isAdmin) {
         openAdminPixelEditor(x, y);
@@ -192,6 +222,11 @@ function submitAnswerHandler() {
     const userAnswer = answerInput.value.trim().toLowerCase();
     if (!userAnswer) {
         showNotification("Введите ответ!", "error");
+        return;
+    }
+
+    if (!database || !isConnected) {
+        showNotification("Нет подключения к базе данных", "error");
         return;
     }
 
@@ -267,6 +302,11 @@ function resetPlayersList() {
         return;
     }
     
+    if (!database || !isConnected) {
+        showNotification("Нет подключения к базе данных", "error");
+        return;
+    }
+    
     database.ref('users').once('value').then(snapshot => {
         const updates = {};
         
@@ -312,7 +352,7 @@ function resetPlayersList() {
         showNotification("Все пиксели разблокированы!", "success");
     }).catch(error => {
         console.error("Error resetting players:", error);
-        showNotification("Ошибка при сбросе игроков", "error");
+        showNotification("Ошибка при сбросе игроков: " + error.message, "error");
     });
 }
 
@@ -334,6 +374,11 @@ function saveQuestion() {
         return;
     }
 
+    if (!database || !isConnected) {
+        showNotification("Нет подключения к базе данных", "error");
+        return;
+    }
+
     const pixelKey = `${x}-${y}`;
     database.ref('pixels/' + pixelKey).set({
         question: question,
@@ -348,7 +393,7 @@ function saveQuestion() {
         loadQuestionsList();
     }).catch(error => {
         console.error("Error saving question:", error);
-        showNotification("Ошибка сохранения вопроса", "error");
+        showNotification("Ошибка сохранения вопроса: " + error.message, "error");
     });
 }
 
@@ -362,6 +407,11 @@ function deleteQuestion() {
         return;
     }
 
+    if (!database || !isConnected) {
+        showNotification("Нет подключения к базе данных", "error");
+        return;
+    }
+
     const pixelKey = `${x}-${y}`;
     database.ref('pixels/' + pixelKey).remove().then(() => {
         showNotification("Вопрос удален!", "success");
@@ -369,12 +419,17 @@ function deleteQuestion() {
         loadQuestionsList();
     }).catch(error => {
         console.error("Error deleting question:", error);
-        showNotification("Ошибка удаления вопроса", "error");
+        showNotification("Ошибка удаления вопроса: " + error.message, "error");
     });
 }
 
 // Загрузка списка вопросов
 function loadQuestionsList() {
+    if (!database || !isConnected) {
+        showNotification("Нет подключения к базе данных", "error");
+        return;
+    }
+    
     database.ref('pixels').once('value').then(snapshot => {
         const questionsList = document.getElementById('questionsList');
         questionsList.innerHTML = '';
@@ -410,6 +465,9 @@ function loadQuestionsList() {
             
             questionsList.appendChild(questionItem);
         });
+    }).catch(error => {
+        console.error("Error loading questions:", error);
+        showNotification("Ошибка загрузки вопросов", "error");
     });
 }
 
@@ -427,6 +485,11 @@ function openAdminPixelEditor(x, y) {
     document.getElementById('adminX').value = x;
     document.getElementById('adminY').value = y;
     
+    if (!database || !isConnected) {
+        showNotification("Нет подключения к базе данных", "error");
+        return;
+    }
+    
     const pixelKey = `${x}-${y}`;
     database.ref('pixels/' + pixelKey).once('value').then(snapshot => {
         const pixelData = snapshot.val();
@@ -439,11 +502,19 @@ function openAdminPixelEditor(x, y) {
             document.getElementById('adminAnswer').value = '';
             document.getElementById('adminColor').value = '#ff0000';
         }
+    }).catch(error => {
+        console.error("Error loading pixel data:", error);
+        showNotification("Ошибка загрузки данных пикселя", "error");
     });
 }
 
 // Настройка реального времени
 function setupRealtimeListeners() {
+    if (!database || !isConnected) {
+        console.log("Cannot setup realtime listeners - no database connection");
+        return;
+    }
+
     // Слушаем изменения пикселей
     database.ref('pixels').on('value', (snapshot) => {
         console.log("Pixels updated:", snapshot.val());
@@ -546,7 +617,7 @@ document.addEventListener('DOMContentLoaded', initGame);
 
 // Очистка при закрытии страницы
 window.addEventListener('beforeunload', () => {
-    if (currentUser && !currentUser.isAdmin) {
+    if (currentUser && !currentUser.isAdmin && database) {
         database.ref('users/' + currentUser.id).remove();
     }
 });
