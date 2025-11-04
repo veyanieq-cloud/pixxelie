@@ -1,12 +1,12 @@
 // Конфигурация Firebase - нужно заменить на вашу!
 const firebaseConfig = {
-    apiKey: "your-api-key",
-    authDomain: "your-project.firebaseapp.com",
-    databaseURL: "https://your-project-default-rtdb.firebaseio.com",
-    projectId: "your-project",
-    storageBucket: "your-project.appspot.com",
-    messagingSenderId: "your-sender-id",
-    appId: "your-app-id"
+  apiKey: "AIzaSyCxX5J41qh1s1DvErx66P87Fy8wUTPO6F8",
+  authDomain: "pixxelie.firebaseapp.com",
+  databaseURL: "https://pixxelie-default-rtdb.firebaseio.com",
+  projectId: "pixxelie",
+  storageBucket: "pixxelie.firebasestorage.app",
+  messagingSenderId: "518065921765",
+  appId: "1:518065921765:web:e920ab874e0f762b3d7e0c"
 };
 
 // Инициализация Firebase
