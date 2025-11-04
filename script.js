@@ -551,4 +551,3 @@ window.addEventListener('beforeunload', () => {
         database.ref('users/' + currentUser.id).remove();
     }
 });
-        
