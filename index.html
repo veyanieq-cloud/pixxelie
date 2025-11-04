@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Пиксельная игра с вопросами</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Экран ввода ника -->
+    <div id="loginScreen" class="screen">
+        <div class="login-container">
+            <h1>Пиксельная игра</h1>
+            <input type="text" id="usernameInput" placeholder="Введите ваш ник" maxlength="20">
+            <button id="joinButton">Присоединиться</button>
+        </div>
+    </div>
+
+    <!-- Основной игровой экран -->
+    <div id="gameScreen" class="screen hidden">
+        <div class="game-container">
+            <!-- Игровое поле -->
+            <div class="game-board">
+                <div id="pixelGrid" class="pixel-grid"></div>
+            </div>
+            
+            <!-- Боковая панель -->
+            <div class="sidebar">
+                <h3>Игроки онлайн</h3>
+                <div id="playersList" class="players-list"></div>
+                <div class="score-board">
+                    <h4>Таблица лидеров</h4>
+                    <div id="scoreList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно вопроса -->
+    <div id="questionModal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="questionText">Вопрос</h3>
+            <input type="text" id="answerInput" placeholder="Ваш ответ">
+            <div class="modal-buttons">
+                <button id="submitAnswer">Ответить</button>
+                <button id="cancelAnswer">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Панель администратора -->
+    <div id="adminPanel" class="modal hidden">
+        <div class="modal-content admin-content">
+            <h3>Панель администратора</h3>
+            
+            <div class="admin-section">
+                <h4>Управление вопросами</h4>
+                <div class="form-group">
+                    <label>Пиксель (x,y):</label>
+                    <input type="number" id="adminX" min="0" max="9" placeholder="X">
+                    <input type="number" id="adminY" min="0" max="9" placeholder="Y">
+                </div>
+                <div class="form-group">
+                    <label>Вопрос:</label>
+                    <textarea id="adminQuestion" placeholder="Введите вопрос"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Правильный ответ:</label>
+                    <input type="text" id="adminAnswer" placeholder="Правильный ответ">
+                </div>
+                <div class="form-group">
+                    <label>Цвет пикселя:</label>
+                    <input type="color" id="adminColor" value="#ff0000">
+                </div>
+                <button id="saveQuestion">Сохранить вопрос</button>
+                <button id="deleteQuestion">Удалить вопрос</button>
+            </div>
+
+            <div class="admin-section">
+                <h4>Список вопросов</h4>
+                <div id="questionsList" class="questions-list"></div>
+            </div>
+
+            <button id="closeAdmin">Закрыть панель</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.10/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.10/firebase-database-compat.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
