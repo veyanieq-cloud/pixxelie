@@ -1,10 +1,4 @@
-// Конфигурация Firebase (замените на свою)
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
+// Конфигурация Firebase - нужно заменить на вашу!
 const firebaseConfig = {
   apiKey: "AIzaSyCxX5J41qh1s1DvErx66P87Fy8wUTPO6F8",
   authDomain: "pixxelie.firebaseapp.com",
@@ -15,11 +9,14 @@ const firebaseConfig = {
   appId: "1:518065921765:web:e920ab874e0f762b3d7e0c"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
 
 // Инициализация Firebase
-firebase.initializeApp(firebaseConfig);
+try {
+    firebase.initializeApp(firebaseConfig);
+    console.log("Firebase initialized successfully");
+} catch (error) {
+    console.error("Firebase initialization error:", error);
+}
 const database = firebase.database();
 
 // Глобальные переменные
@@ -45,9 +42,18 @@ const closeAdmin = document.getElementById('closeAdmin');
 
 // Инициализация игры
 function initGame() {
+    console.log("Game initializing...");
     createPixelGrid();
     setupEventListeners();
-    loadQuestions();
+    
+    // Проверяем подключение к Firebase
+    database.ref('.info/connected').on('value', (snapshot) => {
+        if (snapshot.val() === true) {
+            console.log("Connected to Firebase");
+        } else {
+            console.log("Disconnected from Firebase");
+        }
+    });
 }
 
 // Создание игрового поля
@@ -73,21 +79,18 @@ function setupEventListeners() {
     });
     
     submitAnswer.addEventListener('click', submitAnswerHandler);
-    cancelAnswer.addEventListener('click', () => questionModal.classList.add('hidden'));
-    closeAdmin.addEventListener('click', () => adminPanel.classList.add('hidden'));
-    
-    // Для демонстрации - кнопка админа (в реальном приложении убрать)
-    document.addEventListener('keydown', (e) => {
-        if (e.ctrlKey && e.key === 'a') {
-            isAdmin = true;
-            adminPanel.classList.remove('hidden');
-        }
+    cancelAnswer.addEventListener('click', () => {
+        questionModal.classList.add('hidden');
+        selectedPixel = null;
     });
+    closeAdmin.addEventListener('click', () => adminPanel.classList.add('hidden'));
 }
 
 // Подключение к игре
 function joinGame() {
     const username = usernameInput.value.trim();
+    console.log("Join game attempt with username:", username);
+    
     if (!username) {
         alert('Введите ник!');
         return;
@@ -101,13 +104,18 @@ function joinGame() {
     };
 
     isAdmin = currentUser.isAdmin;
+    console.log("User created:", currentUser);
 
+    // Показываем игровой экран
     loginScreen.classList.add('hidden');
     gameScreen.classList.remove('hidden');
 
+    // Если админ - показываем панель
     if (isAdmin) {
-        adminPanel.classList.remove('hidden');
-        setupAdminPanel();
+        setTimeout(() => {
+            adminPanel.classList.remove('hidden');
+            setupAdminPanel();
+        }, 1000);
     }
 
     // Добавляем пользователя в базу данных
@@ -116,19 +124,22 @@ function joinGame() {
         score: currentUser.score,
         isAdmin: currentUser.isAdmin,
         lastActive: Date.now()
+    }).then(() => {
+        console.log("User saved to database");
+        setupRealtimeListeners();
+    }).catch(error => {
+        console.error("Error saving user:", error);
+        alert('Ошибка подключения к базе данных. Проверьте конфигурацию Firebase.');
     });
-
-    // Слушаем изменения в реальном времени
-    setupRealtimeListeners();
 }
 
 // Обработка клика по пикселю
 function handlePixelClick(x, y) {
+    console.log("Pixel clicked:", x, y, "Admin:", isAdmin);
+    
     if (isAdmin) {
-        // Админ может изменять любые пиксели
         openAdminPixelEditor(x, y);
     } else {
-        // Обычный пользователь может отвечать только на свободные пиксели
         const pixelKey = `${x}-${y}`;
         database.ref('pixels/' + pixelKey).once('value').then(snapshot => {
             const pixelData = snapshot.val();
@@ -140,6 +151,8 @@ function handlePixelClick(x, y) {
             } else {
                 alert('Для этого пикселя нет вопроса!');
             }
+        }).catch(error => {
+            console.error("Error reading pixel data:", error);
         });
     }
 }
@@ -155,6 +168,11 @@ function showQuestion(question, correctAnswer) {
 // Обработка ответа
 function submitAnswerHandler() {
     const userAnswer = answerInput.value.trim().toLowerCase();
+    if (!userAnswer) {
+        alert('Введите ответ!');
+        return;
+    }
+
     const pixelKey = `${selectedPixel.x}-${selectedPixel.y}`;
     
     database.ref('pixels/' + pixelKey).once('value').then(snapshot => {
@@ -176,17 +194,20 @@ function submitAnswerHandler() {
 
             alert('Правильный ответ!');
             questionModal.classList.add('hidden');
+            selectedPixel = null;
         } else {
             alert('Неправильный ответ! Попробуйте еще раз.');
             answerInput.value = '';
             answerInput.focus();
         }
+    }).catch(error => {
+        console.error("Error checking answer:", error);
+        alert('Ошибка при проверке ответа');
     });
 }
 
 // Настройка панели администратора
 function setupAdminPanel() {
-    // Здесь будет код для управления вопросами
     const saveQuestionBtn = document.getElementById('saveQuestion');
     const deleteQuestionBtn = document.getElementById('deleteQuestion');
     
@@ -226,6 +247,9 @@ function saveQuestion() {
         alert('Вопрос сохранен!');
         clearAdminForm();
         loadQuestionsList();
+    }).catch(error => {
+        console.error("Error saving question:", error);
+        alert('Ошибка сохранения вопроса');
     });
 }
 
@@ -244,6 +268,9 @@ function deleteQuestion() {
         alert('Вопрос удален!');
         clearAdminForm();
         loadQuestionsList();
+    }).catch(error => {
+        console.error("Error deleting question:", error);
+        alert('Ошибка удаления вопроса');
     });
 }
 
@@ -252,6 +279,11 @@ function loadQuestionsList() {
     database.ref('pixels').once('value').then(snapshot => {
         const questionsList = document.getElementById('questionsList');
         questionsList.innerHTML = '';
+        
+        if (!snapshot.exists()) {
+            questionsList.innerHTML = '<div>Вопросов пока нет</div>';
+            return;
+        }
         
         snapshot.forEach(childSnapshot => {
             const pixelData = childSnapshot.val();
@@ -315,11 +347,13 @@ function openAdminPixelEditor(x, y) {
 function setupRealtimeListeners() {
     // Слушаем изменения пикселей
     database.ref('pixels').on('value', (snapshot) => {
+        console.log("Pixels updated:", snapshot.val());
         updatePixelGrid(snapshot.val());
     });
 
     // Слушаем изменения пользователей
     database.ref('users').on('value', (snapshot) => {
+        console.log("Users updated:", snapshot.val());
         updatePlayersList(snapshot.val());
     });
 }
@@ -353,7 +387,11 @@ function updatePixelGrid(pixels) {
 
 // Обновление списка игроков
 function updatePlayersList(users) {
-    if (!users) return;
+    if (!users) {
+        playersList.innerHTML = '<div>Нет игроков онлайн</div>';
+        scoreList.innerHTML = '<div>Нет данных</div>';
+        return;
+    }
 
     playersList.innerHTML = '';
     scoreList.innerHTML = '';
@@ -391,12 +429,6 @@ function updatePlayersList(users) {
     });
 }
 
-// Загрузка вопросов (для демонстрации)
-function loadQuestions() {
-    // В реальном приложении вопросы будут загружаться из базы данных
-    // Здесь можно добавить начальные вопросы для демонстрации
-}
-
 // Вспомогательные функции
 function generateId() {
     return Math.random().toString(36).substr(2, 9);
@@ -411,3 +443,4 @@ window.addEventListener('beforeunload', () => {
         database.ref('users/' + currentUser.id).remove();
     }
 });
+       
